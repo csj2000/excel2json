@@ -6,6 +6,7 @@ import DataPreview from './components/DataPreview';
 import FormatSelector from './components/FormatSelector';
 import BatchProcessor, { FileProcessStatus } from './components/BatchProcessor';
 import HeaderMapper from './components/HeaderMapper';
+import ColumnSelector from './components/ColumnSelector';
 import { 
   parseExcelFile, 
   extractSheetData, 
@@ -32,6 +33,7 @@ const App: React.FC = () => {
   const [jsonFormat, setJsonFormat] = useState<JsonFormat>('array');
   const [useTypeConversion, setUseTypeConversion] = useState(true);
   const [headerMapping, setHeaderMapping] = useState<Record<string, string>>({});
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -117,6 +119,13 @@ const App: React.FC = () => {
     try {
       setIsProcessing(true);
 
+      // 验证至少选择了一列
+      if (selectedColumns.length === 0) {
+        alert('请至少选择一列进行导出');
+        setIsProcessing(false);
+        return;
+      }
+
       // 提取所有选中的工作表数据
       const parsedSheets = selectedSheets.map(sheetName => 
         extractSheetData(workbook, sheetName)
@@ -133,6 +142,7 @@ const App: React.FC = () => {
           skipEmptyRows: true,
           startRow: 1,
           headerMapping,
+          selectedColumns,
         });
         defaultFileName = `${parsedSheets[0].name}.json`;
       } else {
@@ -143,6 +153,7 @@ const App: React.FC = () => {
           skipEmptyRows: true,
           startRow: 1,
           headerMapping,
+          selectedColumns,
         });
         defaultFileName = 'multiple-sheets.json';
       }
@@ -215,6 +226,7 @@ const App: React.FC = () => {
             skipEmptyRows: true,
             startRow: 1,
             headerMapping,
+            selectedColumns,
           });
 
           // 保存文件（自动命名）
@@ -304,6 +316,12 @@ const App: React.FC = () => {
           {previewSheet && (
             <>
               <DataPreview sheet={previewSheet} maxRows={50} />
+              
+              <ColumnSelector
+                availableColumns={previewSheet.headers}
+                selectedColumns={selectedColumns}
+                onSelectionChange={setSelectedColumns}
+              />
               
               <HeaderMapper
                 originalHeaders={previewSheet.headers}

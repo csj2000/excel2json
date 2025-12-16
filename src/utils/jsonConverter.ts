@@ -9,6 +9,7 @@ export interface ConversionOptions {
   skipEmptyRows?: boolean;
   startRow?: number; // 从哪一行开始（0-based）
   headerMapping?: Record<string, string>; // 表头映射/重命名
+  selectedColumns?: string[]; // 选择要导出的列
 }
 
 /**
@@ -18,7 +19,7 @@ export const convertToJson = (
   sheet: ParsedSheet,
   options: ConversionOptions
 ): any[] => {
-  const { useTypeConversion, skipEmptyRows, startRow, headerMapping } = options;
+  const { useTypeConversion, skipEmptyRows, startRow, headerMapping, selectedColumns } = options;
 
   // 过滤空行
   let dataRows = sheet.data.slice(startRow || 1); // 默认跳过第一行（表头）
@@ -34,8 +35,27 @@ export const convertToJson = (
     headerMapping && headerMapping[header] ? headerMapping[header] : header
   );
 
+  // 过滤选中的列
+  let filteredHeaders = headers;
+  let filteredDataRows = dataRows;
+  
+  if (selectedColumns && selectedColumns.length > 0) {
+    // 找出选中列的索引
+    const selectedIndices = selectedColumns
+      .map(col => sheet.headers.indexOf(col))
+      .filter(idx => idx !== -1);
+    
+    // 过滤表头
+    filteredHeaders = selectedIndices.map(idx => headers[idx]);
+    
+    // 过滤数据行
+    filteredDataRows = dataRows.map(row => 
+      selectedIndices.map(idx => row[idx])
+    );
+  }
+
   // 统一转换为对象数组
-  return convertToArrayOfObjects(headers, dataRows, useTypeConversion);
+  return convertToArrayOfObjects(filteredHeaders, filteredDataRows, useTypeConversion);
 };
 
 /**
