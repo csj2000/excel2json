@@ -29,9 +29,8 @@ const App: React.FC = () => {
   const [previewSheet, setPreviewSheet] = useState<ParsedSheet | null>(null);
   
   // JSON 格式选项
-  const [jsonFormat, setJsonFormat] = useState<JsonFormat>('array-of-objects');
+  const [jsonFormat, setJsonFormat] = useState<JsonFormat>('array');
   const [useTypeConversion, setUseTypeConversion] = useState(true);
-  const [groupByColumn, setGroupByColumn] = useState<string>('');
   const [headerMapping, setHeaderMapping] = useState<Record<string, string>>({});
   
   const [isProcessing, setIsProcessing] = useState(false);
@@ -78,11 +77,6 @@ const App: React.FC = () => {
         // 加载预览
         const preview = extractSheetData(wb, sheetList[0].name);
         setPreviewSheet(preview);
-        
-        // 设置可用的列（用于分组）
-        if (preview.headers.length > 0) {
-          setGroupByColumn(preview.headers[0]);
-        }
       }
 
       // 更新文件状态
@@ -120,11 +114,6 @@ const App: React.FC = () => {
       return;
     }
 
-    if (jsonFormat === 'grouped' && !groupByColumn) {
-      alert('分组格式需要选择分组列');
-      return;
-    }
-
     try {
       setIsProcessing(true);
 
@@ -133,7 +122,7 @@ const App: React.FC = () => {
         extractSheetData(workbook, sheetName)
       );
 
-      let jsonData: any;
+      let jsonData: any[];
       let defaultFileName = 'output.json';
 
       if (selectedSheets.length === 1) {
@@ -141,28 +130,25 @@ const App: React.FC = () => {
         jsonData = convertToJson(parsedSheets[0], {
           format: jsonFormat,
           useTypeConversion,
-          groupByColumn: jsonFormat === 'grouped' ? groupByColumn : undefined,
           skipEmptyRows: true,
           startRow: 1,
           headerMapping,
         });
         defaultFileName = `${parsedSheets[0].name}.json`;
       } else {
-        // 多个工作表
-        const sheetsData = convertMultipleSheets(parsedSheets, {
+        // 多个工作表（合并为一个数组）
+        jsonData = convertMultipleSheets(parsedSheets, {
           format: jsonFormat,
           useTypeConversion,
-          groupByColumn: jsonFormat === 'grouped' ? groupByColumn : undefined,
           skipEmptyRows: true,
           startRow: 1,
           headerMapping,
         });
-        jsonData = sheetsData;
         defaultFileName = 'multiple-sheets.json';
       }
 
       // 格式化 JSON
-      const jsonString = formatJson(jsonData, true);
+      const jsonString = formatJson(jsonData, jsonFormat);
 
       // 保存文件
       const { ipcRenderer } = window.require('electron');
@@ -189,11 +175,6 @@ const App: React.FC = () => {
   const handleBatchConvert = async () => {
     if (files.length === 0) {
       alert('请先选择文件');
-      return;
-    }
-
-    if (jsonFormat === 'grouped' && !groupByColumn) {
-      alert('分组格式需要选择分组列');
       return;
     }
 
@@ -231,7 +212,6 @@ const App: React.FC = () => {
           const sheetsData = convertMultipleSheets(parsedSheets, {
             format: jsonFormat,
             useTypeConversion,
-            groupByColumn: jsonFormat === 'grouped' ? groupByColumn : undefined,
             skipEmptyRows: true,
             startRow: 1,
             headerMapping,
@@ -239,7 +219,7 @@ const App: React.FC = () => {
 
           // 保存文件（自动命名）
           const outputPath = file.filePath.replace(/\.xlsx$/i, '.json');
-          const jsonString = formatJson(sheetsData, true);
+          const jsonString = formatJson(sheetsData, jsonFormat);
           const writeResult = await ipcRenderer.invoke('write-file', outputPath, jsonString);
           
           if (!writeResult.success) {
@@ -336,9 +316,6 @@ const App: React.FC = () => {
           <FormatSelector
             selectedFormat={jsonFormat}
             onFormatChange={setJsonFormat}
-            groupByColumn={groupByColumn}
-            onGroupByColumnChange={setGroupByColumn}
-            availableColumns={previewSheet?.headers || []}
             useTypeConversion={useTypeConversion}
             onTypeConversionChange={setUseTypeConversion}
           />

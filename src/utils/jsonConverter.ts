@@ -1,24 +1,24 @@
 import { ParsedSheet, smartTypeConversion } from './excelParser';
 
-export type JsonFormat = 'array-of-objects' | 'array-2d' | 'keyed-object' | 'grouped';
+// NoSQLBooster 风格的三种导出格式
+export type JsonFormat = 'newline' | 'comma-newline' | 'array';
 
 export interface ConversionOptions {
   format: JsonFormat;
   useTypeConversion: boolean;
-  groupByColumn?: string; // 用于 grouped 格式
   skipEmptyRows?: boolean;
   startRow?: number; // 从哪一行开始（0-based）
   headerMapping?: Record<string, string>; // 表头映射/重命名
 }
 
 /**
- * 将解析的工作表数据转换为 JSON
+ * 将解析的工作表数据转换为对象数组（所有格式的基础）
  */
 export const convertToJson = (
   sheet: ParsedSheet,
   options: ConversionOptions
-): any => {
-  const { format, useTypeConversion, groupByColumn, skipEmptyRows, startRow, headerMapping } = options;
+): any[] => {
+  const { useTypeConversion, skipEmptyRows, startRow, headerMapping } = options;
 
   // 过滤空行
   let dataRows = sheet.data.slice(startRow || 1); // 默认跳过第一行（表头）
@@ -34,29 +34,12 @@ export const convertToJson = (
     headerMapping && headerMapping[header] ? headerMapping[header] : header
   );
 
-  switch (format) {
-    case 'array-of-objects':
-      return convertToArrayOfObjects(headers, dataRows, useTypeConversion);
-    
-    case 'array-2d':
-      return convertToArray2D(sheet.data, useTypeConversion);
-    
-    case 'keyed-object':
-      return convertToKeyedObject(headers, dataRows, useTypeConversion);
-    
-    case 'grouped':
-      if (!groupByColumn) {
-        throw new Error('分组格式需要指定分组列');
-      }
-      return convertToGrouped(headers, dataRows, groupByColumn, useTypeConversion);
-    
-    default:
-      throw new Error(`不支持的格式: ${format}`);
-  }
+  // 统一转换为对象数组
+  return convertToArrayOfObjects(headers, dataRows, useTypeConversion);
 };
 
 /**
- * 转换为对象数组格式：[{name: "张三", age: 20}, ...]
+ * 转换为对象数组：[{name: "张三", age: 20}, ...]
  */
 const convertToArrayOfObjects = (
   headers: string[],
@@ -74,105 +57,56 @@ const convertToArrayOfObjects = (
 };
 
 /**
- * 转换为二维数组格式：[["name", "age"], ["张三", 20], ...]
- */
-const convertToArray2D = (
-  allData: any[][],
-  useTypeConversion: boolean
-): any[][] => {
-  if (!useTypeConversion) {
-    return allData;
-  }
-
-  return allData.map((row, rowIdx) => {
-    // 第一行（表头）不进行类型转换
-    if (rowIdx === 0) {
-      return row;
-    }
-    return row.map(cell => smartTypeConversion(cell));
-  });
-};
-
-/**
- * 转换为键值对象格式：{"1": {name: "张三"}, "2": {...}}
- */
-const convertToKeyedObject = (
-  headers: string[],
-  dataRows: any[][],
-  useTypeConversion: boolean
-): Record<string, any> => {
-  const result: Record<string, any> = {};
-  
-  dataRows.forEach((row, idx) => {
-    const obj: Record<string, any> = {};
-    headers.forEach((header, colIdx) => {
-      const value = row[colIdx];
-      obj[header] = useTypeConversion ? smartTypeConversion(value) : value;
-    });
-    result[String(idx + 1)] = obj;
-  });
-
-  return result;
-};
-
-/**
- * 转换为分组格式：按指定列的值进行分组
- * 例如：{"部门A": [{...}, {...}], "部门B": [{...}]}
- */
-const convertToGrouped = (
-  headers: string[],
-  dataRows: any[][],
-  groupByColumn: string,
-  useTypeConversion: boolean
-): Record<string, any[]> => {
-  const groupIndex = headers.indexOf(groupByColumn);
-  
-  if (groupIndex === -1) {
-    throw new Error(`找不到分组列: ${groupByColumn}`);
-  }
-
-  const result: Record<string, any[]> = {};
-
-  dataRows.forEach(row => {
-    const groupKey = String(row[groupIndex] || '未分组');
-    
-    const obj: Record<string, any> = {};
-    headers.forEach((header, idx) => {
-      if (idx !== groupIndex) { // 不包含分组列本身
-        const value = row[idx];
-        obj[header] = useTypeConversion ? smartTypeConversion(value) : value;
-      }
-    });
-
-    if (!result[groupKey]) {
-      result[groupKey] = [];
-    }
-    result[groupKey].push(obj);
-  });
-
-  return result;
-};
-
-/**
  * 批量转换多个工作表
  */
 export const convertMultipleSheets = (
   sheets: ParsedSheet[],
   options: ConversionOptions
-): Record<string, any> => {
-  const result: Record<string, any> = {};
+): any[] => {
+  // 合并所有工作表的数据为一个数组
+  const allData: any[] = [];
   
   sheets.forEach(sheet => {
-    result[sheet.name] = convertToJson(sheet, options);
+    const sheetData = convertToJson(sheet, options);
+    allData.push(...sheetData);
   });
 
-  return result;
+  return allData;
 };
 
 /**
- * 格式化 JSON 字符串
+ * 格式化 JSON 字符串 - NoSQLBooster 风格
+ * @param data 数据数组
+ * @param format 导出格式
  */
-export const formatJson = (data: any, pretty: boolean = true): string => {
-  return JSON.stringify(data, null, pretty ? 2 : 0);
+export const formatJson = (data: any[], format: JsonFormat): string => {
+  if (!Array.isArray(data) || data.length === 0) {
+    return '[]';
+  }
+
+  switch (format) {
+    case 'newline':
+      // 用换行符分隔文档
+      // {"name":"张三","age":20}
+      // {"name":"李四","age":25}
+      return data.map(item => JSON.stringify(item)).join('\n');
+    
+    case 'comma-newline':
+      // 用逗号和换行符分隔文档
+      // {"name":"张三","age":20},
+      // {"name":"李四","age":25}
+      return data.map(item => JSON.stringify(item)).join(',\n');
+    
+    case 'array':
+      // 导出为数组格式（标准 JSON）
+      // [
+      //   {"name":"张三","age":20},
+      //   {"name":"李四","age":25}
+      // ]
+      return JSON.stringify(data, null, 2);
+    
+    default:
+      return JSON.stringify(data, null, 2);
+  }
 };
 

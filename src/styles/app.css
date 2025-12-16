@@ -523,6 +523,14 @@ tbody tr:hover {
   color: var(--text-primary);
 }
 
+.format-technical {
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  font-family: 'Consolas', 'Monaco', monospace;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
 .format-description {
   font-size: 0.875rem;
   color: var(--text-secondary);
@@ -538,34 +546,9 @@ tbody tr:hover {
   overflow-x: auto;
 }
 
-.group-by-selector {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: #fffbeb;
-  border-left: 3px solid #fbbf24;
-  border-radius: var(--radius-md);
-}
-
-.group-by-selector label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.group-by-selector select {
-  flex: 1;
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  font-size: 0.875rem;
-  background: white;
-  cursor: pointer;
-}
-
 .conversion-options {
-  padding-top: 1rem;
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
   border-top: 1px solid var(--border-color);
 }
 

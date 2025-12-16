@@ -4,9 +4,6 @@ import { JsonFormat } from '../utils/jsonConverter';
 interface FormatSelectorProps {
   selectedFormat: JsonFormat;
   onFormatChange: (format: JsonFormat) => void;
-  groupByColumn?: string;
-  onGroupByColumnChange?: (column: string) => void;
-  availableColumns?: string[];
   useTypeConversion: boolean;
   onTypeConversionChange: (use: boolean) => void;
 }
@@ -14,36 +11,36 @@ interface FormatSelectorProps {
 const FormatSelector: React.FC<FormatSelectorProps> = ({
   selectedFormat,
   onFormatChange,
-  groupByColumn,
-  onGroupByColumnChange,
-  availableColumns = [],
   useTypeConversion,
   onTypeConversionChange,
 }) => {
-  const formats: Array<{ value: JsonFormat; label: string; description: string; example: string }> = [
+  const formats: Array<{ 
+    value: JsonFormat; 
+    label: string; 
+    description: string; 
+    example: string;
+    technical: string;
+  }> = [
     {
-      value: 'array-of-objects',
-      label: '对象数组',
-      description: '第一行作为键名',
-      example: '[{"name": "张三", "age": 20}, ...]'
+      value: 'newline',
+      label: '换行符分隔',
+      description: '每个文档独立一行，用换行符分隔',
+      technical: 'Separate Documents with Newline (\\n)',
+      example: '{"name":"张三","age":20}\n{"name":"李四","age":25}'
     },
     {
-      value: 'array-2d',
-      label: '二维数组',
-      description: '包含表头',
-      example: '[["name", "age"], ["张三", 20], ...]'
+      value: 'comma-newline',
+      label: '逗号换行分隔',
+      description: '文档之间用逗号和换行符分隔',
+      technical: 'Separate Documents with Comma and Newline (,\\n)',
+      example: '{"name":"张三","age":20},\n{"name":"李四","age":25}'
     },
     {
-      value: 'keyed-object',
-      label: '键值对象',
-      description: '行号作为键',
-      example: '{"1": {"name": "张三"}, "2": {...}}'
-    },
-    {
-      value: 'grouped',
-      label: '分组对象',
-      description: '按指定列分组',
-      example: '{"部门A": [{...}], "部门B": [{...}]}'
+      value: 'array',
+      label: '标准数组格式 ⭐',
+      description: '导出为标准 JSON 数组',
+      technical: 'Export Documents as Array ([,\\n])',
+      example: '[\n  {"name":"张三","age":20},\n  {"name":"李四","age":25}\n]'
     }
   ];
 
@@ -62,29 +59,13 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({
             />
             <div className="format-details">
               <strong>{format.label}</strong>
+              <p className="format-technical">{format.technical}</p>
               <p className="format-description">{format.description}</p>
               <code className="format-example">{format.example}</code>
             </div>
           </label>
         ))}
       </div>
-
-      {selectedFormat === 'grouped' && (
-        <div className="group-by-selector">
-          <label>
-            分组列：
-            <select 
-              value={groupByColumn || ''} 
-              onChange={(e) => onGroupByColumnChange?.(e.target.value)}
-            >
-              <option value="">请选择</option>
-              {availableColumns.map(col => (
-                <option key={col} value={col}>{col}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-      )}
 
       <div className="conversion-options">
         <label className="checkbox-label">
