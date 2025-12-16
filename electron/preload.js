@@ -1,5 +1,5 @@
 // Preload script (如果需要的话)
-const { contextBridge, ipcRenderer } = require('electron');
+import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   selectExcelFiles: () => ipcRenderer.invoke('select-excel-files'),
