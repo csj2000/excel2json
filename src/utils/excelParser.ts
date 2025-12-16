@@ -68,14 +68,37 @@ export const extractSheetData = (
     };
   }
 
-  // 第一行作为表头
-  const headers = data[0].map((h: any, idx: number) => 
-    h !== null && h !== undefined && h !== '' ? String(h) : `Column${idx + 1}`
+  // 第一行作为表头，过滤掉空白列
+  const rawHeaders = data[0] || [];
+  const headers: string[] = [];
+  const validColumnIndices: number[] = [];
+  
+  rawHeaders.forEach((h: any, idx: number) => {
+    const headerName = h !== null && h !== undefined && h !== '' ? String(h).trim() : '';
+    // 只保留非空的列
+    if (headerName !== '') {
+      headers.push(headerName);
+      validColumnIndices.push(idx);
+    }
+  });
+  
+  // 如果没有有效的表头，返回空数据
+  if (headers.length === 0) {
+    return {
+      name: sheetName,
+      data: [],
+      headers: []
+    };
+  }
+  
+  // 过滤数据行，只保留有效列
+  const filteredData = data.map(row => 
+    validColumnIndices.map(idx => row[idx])
   );
 
   return {
     name: sheetName,
-    data,
+    data: filteredData,
     headers
   };
 };

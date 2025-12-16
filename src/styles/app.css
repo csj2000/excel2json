@@ -354,11 +354,22 @@ button {
   background: #f3f4f6;
 }
 
-.sheet-item input[type="checkbox"] {
+.sheet-item input[type="checkbox"],
+.sheet-item input[type="radio"] {
   width: 18px;
   height: 18px;
   cursor: pointer;
   accent-color: var(--primary-color);
+}
+
+.sheet-item.single {
+  cursor: default;
+  background: #eef2ff;
+  border-left: 3px solid var(--primary-color);
+}
+
+.sheet-item.active {
+  background: #eef2ff;
 }
 
 .sheet-info {
@@ -544,6 +555,10 @@ tbody tr:hover {
   background: white;
   border-radius: 4px;
   overflow-x: auto;
+  white-space: pre-wrap;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  line-height: 1.5;
+  border: 1px solid var(--border-color);
 }
 
 .conversion-options {

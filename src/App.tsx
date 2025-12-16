@@ -26,7 +26,7 @@ const App: React.FC = () => {
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
   const [sheets, setSheets] = useState<SheetInfo[]>([]);
-  const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [previewSheet, setPreviewSheet] = useState<ParsedSheet | null>(null);
   
   // JSON 格式选项
@@ -74,10 +74,11 @@ const App: React.FC = () => {
       
       // 默认选择第一个工作表
       if (sheetList.length > 0) {
-        setSelectedSheets([sheetList[0].name]);
+        const firstSheet = sheetList[0].name;
+        setSelectedSheet(firstSheet);
         
         // 加载预览
-        const preview = extractSheetData(wb, sheetList[0].name);
+        const preview = extractSheetData(wb, firstSheet);
         setPreviewSheet(preview);
       }
 
@@ -103,15 +104,18 @@ const App: React.FC = () => {
 
   // 工作表选择变化时更新预览
   useEffect(() => {
-    if (workbook && selectedSheets.length > 0) {
-      const preview = extractSheetData(workbook, selectedSheets[0]);
+    if (workbook && selectedSheet) {
+      const preview = extractSheetData(workbook, selectedSheet);
       setPreviewSheet(preview);
+      // 重置列选择和表头映射
+      setSelectedColumns([]);
+      setHeaderMapping({});
     }
-  }, [selectedSheets, workbook]);
+  }, [selectedSheet, workbook]);
 
   // 转换并导出
   const handleConvert = async () => {
-    if (!workbook || selectedSheets.length === 0) {
+    if (!workbook || !selectedSheet) {
       alert('请先选择要转换的工作表');
       return;
     }
@@ -126,37 +130,20 @@ const App: React.FC = () => {
         return;
       }
 
-      // 提取所有选中的工作表数据
-      const parsedSheets = selectedSheets.map(sheetName => 
-        extractSheetData(workbook, sheetName)
-      );
+      // 提取工作表数据
+      const parsedSheet = extractSheetData(workbook, selectedSheet);
 
-      let jsonData: any[];
-      let defaultFileName = 'output.json';
-
-      if (selectedSheets.length === 1) {
-        // 单个工作表
-        jsonData = convertToJson(parsedSheets[0], {
-          format: jsonFormat,
-          useTypeConversion,
-          skipEmptyRows: true,
-          startRow: 1,
-          headerMapping,
-          selectedColumns,
-        });
-        defaultFileName = `${parsedSheets[0].name}.json`;
-      } else {
-        // 多个工作表（合并为一个数组）
-        jsonData = convertMultipleSheets(parsedSheets, {
-          format: jsonFormat,
-          useTypeConversion,
-          skipEmptyRows: true,
-          startRow: 1,
-          headerMapping,
-          selectedColumns,
-        });
-        defaultFileName = 'multiple-sheets.json';
-      }
+      // 转换为 JSON
+      const jsonData = convertToJson(parsedSheet, {
+        format: jsonFormat,
+        useTypeConversion,
+        skipEmptyRows: true,
+        startRow: 1,
+        headerMapping,
+        selectedColumns,
+      });
+      
+      const defaultFileName = `${parsedSheet.name}.json`;
 
       // 格式化 JSON
       const jsonString = formatJson(jsonData, jsonFormat);
@@ -216,11 +203,15 @@ const App: React.FC = () => {
           // 解析 Excel
           const { workbook: wb, sheets: sheetList } = await parseExcelFile(result.data);
           
-          // 提取所有工作表
-          const parsedSheets = sheetList.map(sheet => extractSheetData(wb, sheet.name));
+          // 只转换第一个工作表
+          if (sheetList.length === 0) {
+            throw new Error('Excel 文件中没有工作表');
+          }
+          
+          const parsedSheet = extractSheetData(wb, sheetList[0].name);
           
           // 转换
-          const sheetsData = convertMultipleSheets(parsedSheets, {
+          const sheetData = convertToJson(parsedSheet, {
             format: jsonFormat,
             useTypeConversion,
             skipEmptyRows: true,
@@ -231,7 +222,7 @@ const App: React.FC = () => {
 
           // 保存文件（自动命名）
           const outputPath = file.filePath.replace(/\.xlsx$/i, '.json');
-          const jsonString = formatJson(sheetsData, jsonFormat);
+          const jsonString = formatJson(sheetData, jsonFormat);
           const writeResult = await ipcRenderer.invoke('write-file', outputPath, jsonString);
           
           if (!writeResult.success) {
@@ -269,8 +260,10 @@ const App: React.FC = () => {
       setCurrentFile(null);
       setWorkbook(null);
       setSheets([]);
-      setSelectedSheets([]);
+      setSelectedSheet('');
       setPreviewSheet(null);
+      setSelectedColumns([]);
+      setHeaderMapping({});
     }
   };
 
@@ -279,8 +272,10 @@ const App: React.FC = () => {
     setCurrentFile(null);
     setWorkbook(null);
     setSheets([]);
-    setSelectedSheets([]);
+    setSelectedSheet('');
     setPreviewSheet(null);
+    setSelectedColumns([]);
+    setHeaderMapping({});
   };
 
   return (
@@ -306,8 +301,8 @@ const App: React.FC = () => {
           {sheets.length > 0 && (
             <SheetSelector
               sheets={sheets}
-              selectedSheets={selectedSheets}
-              onSelectionChange={setSelectedSheets}
+              selectedSheet={selectedSheet}
+              onSelectionChange={setSelectedSheet}
             />
           )}
         </div>
@@ -341,10 +336,10 @@ const App: React.FC = () => {
           <div className="action-buttons">
             <button 
               onClick={handleConvert}
-              disabled={isProcessing || !workbook || selectedSheets.length === 0}
+              disabled={isProcessing || !workbook || !selectedSheet}
               className="primary-button large"
             >
-              {isProcessing ? '处理中...' : '转换当前文件'}
+              {isProcessing ? '处理中...' : '转换并导出'}
             </button>
             
             {files.length > 1 && (

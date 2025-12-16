@@ -3,50 +3,53 @@ import { SheetInfo } from '../utils/excelParser';
 
 interface SheetSelectorProps {
   sheets: SheetInfo[];
-  selectedSheets: string[];
-  onSelectionChange: (selected: string[]) => void;
+  selectedSheet: string;
+  onSelectionChange: (selected: string) => void;
 }
 
 const SheetSelector: React.FC<SheetSelectorProps> = ({ 
   sheets, 
-  selectedSheets, 
+  selectedSheet, 
   onSelectionChange 
 }) => {
-  const handleToggle = (sheetName: string) => {
-    if (selectedSheets.includes(sheetName)) {
-      onSelectionChange(selectedSheets.filter(name => name !== sheetName));
-    } else {
-      onSelectionChange([...selectedSheets, sheetName]);
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (selectedSheets.length === sheets.length) {
-      onSelectionChange([]);
-    } else {
-      onSelectionChange(sheets.map(s => s.name));
-    }
-  };
-
   if (sheets.length === 0) {
     return null;
+  }
+
+  // 如果只有一个工作表，直接显示不需要选择
+  if (sheets.length === 1) {
+    return (
+      <div className="sheet-selector">
+        <div className="selector-header">
+          <h3>当前工作表</h3>
+        </div>
+        <div className="sheet-list">
+          <div className="sheet-item active single">
+            <div className="sheet-info">
+              <span className="sheet-name">{sheets[0].name}</span>
+              <span className="sheet-stats">
+                {sheets[0].rowCount} 行 × {sheets[0].colCount} 列
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="sheet-selector">
       <div className="selector-header">
-        <h3>选择工作表</h3>
-        <button onClick={handleSelectAll} className="text-button">
-          {selectedSheets.length === sheets.length ? '取消全选' : '全选'}
-        </button>
+        <h3>选择工作表（单选）</h3>
       </div>
       <div className="sheet-list">
         {sheets.map(sheet => (
           <label key={sheet.name} className="sheet-item">
             <input
-              type="checkbox"
-              checked={selectedSheets.includes(sheet.name)}
-              onChange={() => handleToggle(sheet.name)}
+              type="radio"
+              name="sheet"
+              checked={selectedSheet === sheet.name}
+              onChange={() => onSelectionChange(sheet.name)}
             />
             <div className="sheet-info">
               <span className="sheet-name">{sheet.name}</span>

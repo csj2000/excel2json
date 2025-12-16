@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface HeaderMapperProps {
   originalHeaders: string[];
@@ -11,22 +11,41 @@ const HeaderMapper: React.FC<HeaderMapperProps> = ({
   onMappingChange,
   initialMapping = {}
 }) => {
-  const [mapping, setMapping] = useState<Record<string, string>>(initialMapping);
+  const [mapping, setMapping] = useState<Record<string, string>>({});
   const [isExpanded, setIsExpanded] = useState(false);
+  const lastHeadersRef = useRef<string>('');
 
   useEffect(() => {
-    // 初始化映射，如果没有设置则使用原始表头
-    const newMapping: Record<string, string> = {};
-    originalHeaders.forEach(header => {
-      newMapping[header] = initialMapping[header] || header;
-    });
-    setMapping(newMapping);
-  }, [originalHeaders, initialMapping]);
+    // 只在表头真正改变时才重新初始化
+    const currentHeaders = originalHeaders.join('|');
+    if (currentHeaders && currentHeaders !== lastHeadersRef.current) {
+      const newMapping: Record<string, string> = {};
+      originalHeaders.forEach(header => {
+        newMapping[header] = initialMapping[header] || header;
+      });
+      setMapping(newMapping);
+      lastHeadersRef.current = currentHeaders;
+      // 通知父组件初始映射
+      onMappingChange(newMapping);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originalHeaders.join('|')]);
 
   const handleHeaderChange = (original: string, newName: string) => {
+    // 输入时直接更新，不做校验
     const newMapping = { ...mapping, [original]: newName };
     setMapping(newMapping);
     onMappingChange(newMapping);
+  };
+
+  const handleHeaderBlur = (original: string) => {
+    // 失焦时校验：如果为空则恢复原始列名
+    const currentValue = mapping[original];
+    if (!currentValue || currentValue.trim() === '') {
+      const newMapping = { ...mapping, [original]: original };
+      setMapping(newMapping);
+      onMappingChange(newMapping);
+    }
   };
 
   const handleReset = () => {
@@ -91,6 +110,7 @@ const HeaderMapper: React.FC<HeaderMapperProps> = ({
                         type="text"
                         value={mapping[header] || ''}
                         onChange={(e) => handleHeaderChange(header, e.target.value)}
+                        onBlur={() => handleHeaderBlur(header)}
                         placeholder={header}
                         className="header-input"
                       />
