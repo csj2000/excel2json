@@ -8,6 +8,7 @@ export interface ConversionOptions {
   groupByColumn?: string; // 用于 grouped 格式
   skipEmptyRows?: boolean;
   startRow?: number; // 从哪一行开始（0-based）
+  headerMapping?: Record<string, string>; // 表头映射/重命名
 }
 
 /**
@@ -17,7 +18,7 @@ export const convertToJson = (
   sheet: ParsedSheet,
   options: ConversionOptions
 ): any => {
-  const { format, useTypeConversion, groupByColumn, skipEmptyRows, startRow } = options;
+  const { format, useTypeConversion, groupByColumn, skipEmptyRows, startRow, headerMapping } = options;
 
   // 过滤空行
   let dataRows = sheet.data.slice(startRow || 1); // 默认跳过第一行（表头）
@@ -28,7 +29,10 @@ export const convertToJson = (
     );
   }
 
-  const headers = sheet.headers;
+  // 应用表头映射
+  const headers = sheet.headers.map(header => 
+    headerMapping && headerMapping[header] ? headerMapping[header] : header
+  );
 
   switch (format) {
     case 'array-of-objects':

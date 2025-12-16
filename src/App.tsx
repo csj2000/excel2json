@@ -5,6 +5,7 @@ import SheetSelector from './components/SheetSelector';
 import DataPreview from './components/DataPreview';
 import FormatSelector from './components/FormatSelector';
 import BatchProcessor, { FileProcessStatus } from './components/BatchProcessor';
+import HeaderMapper from './components/HeaderMapper';
 import { 
   parseExcelFile, 
   extractSheetData, 
@@ -31,6 +32,7 @@ const App: React.FC = () => {
   const [jsonFormat, setJsonFormat] = useState<JsonFormat>('array-of-objects');
   const [useTypeConversion, setUseTypeConversion] = useState(true);
   const [groupByColumn, setGroupByColumn] = useState<string>('');
+  const [headerMapping, setHeaderMapping] = useState<Record<string, string>>({});
   
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -142,6 +144,7 @@ const App: React.FC = () => {
           groupByColumn: jsonFormat === 'grouped' ? groupByColumn : undefined,
           skipEmptyRows: true,
           startRow: 1,
+          headerMapping,
         });
         defaultFileName = `${parsedSheets[0].name}.json`;
       } else {
@@ -152,6 +155,7 @@ const App: React.FC = () => {
           groupByColumn: jsonFormat === 'grouped' ? groupByColumn : undefined,
           skipEmptyRows: true,
           startRow: 1,
+          headerMapping,
         });
         jsonData = sheetsData;
         defaultFileName = 'multiple-sheets.json';
@@ -230,6 +234,7 @@ const App: React.FC = () => {
             groupByColumn: jsonFormat === 'grouped' ? groupByColumn : undefined,
             skipEmptyRows: true,
             startRow: 1,
+            headerMapping,
           });
 
           // 保存文件（自动命名）
@@ -317,7 +322,15 @@ const App: React.FC = () => {
 
         <div className="right-panel">
           {previewSheet && (
-            <DataPreview sheet={previewSheet} maxRows={50} />
+            <>
+              <DataPreview sheet={previewSheet} maxRows={50} />
+              
+              <HeaderMapper
+                originalHeaders={previewSheet.headers}
+                onMappingChange={setHeaderMapping}
+                initialMapping={headerMapping}
+              />
+            </>
           )}
 
           <FormatSelector
