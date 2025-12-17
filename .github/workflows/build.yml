@@ -33,18 +33,18 @@ jobs:
       
       - name: 打包 Windows
         if: matrix.os == 'windows-latest'
-        run: npx electron-builder --win --x64 --config electron-builder.yml
+        run: npx electron-builder --win --x64 --publish never --config electron-builder.yml
       
       - name: 打包 macOS
         if: matrix.os == 'macos-latest'
-        run: npx electron-builder --mac --x64 --arm64 --config electron-builder.yml
+        run: npx electron-builder --mac --x64 --arm64 --publish never --config electron-builder.yml
         env:
           # 跳过代码签名（如果有证书可以配置）
           CSC_IDENTITY_AUTO_DISCOVERY: false
       
       - name: 打包 Linux
         if: matrix.os == 'ubuntu-latest'
-        run: npx electron-builder --linux --x64 --config electron-builder.yml
+        run: npx electron-builder --linux --x64 --publish never --config electron-builder.yml
       
       - name: 上传 Windows 构建产物
         if: matrix.os == 'windows-latest'

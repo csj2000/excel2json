@@ -5,6 +5,7 @@ directories:
 files:
   - electron/**/*
   - dist/**/*
+publish: null  # 禁用自动发布，由 GitHub Actions 处理
 
 # Windows 配置
 win:
