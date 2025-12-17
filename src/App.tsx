@@ -7,6 +7,7 @@ import FormatSelector from './components/FormatSelector';
 import BatchProcessor, { FileProcessStatus } from './components/BatchProcessor';
 import HeaderMapper from './components/HeaderMapper';
 import ColumnSelector from './components/ColumnSelector';
+import DataValidator from './components/DataValidator';
 import { 
   parseExcelFile, 
   extractSheetData, 
@@ -311,6 +312,8 @@ const App: React.FC = () => {
           {previewSheet && (
             <>
               <DataPreview sheet={previewSheet} maxRows={50} />
+              
+              <DataValidator sheet={previewSheet} />
               
               <ColumnSelector
                 availableColumns={previewSheet.headers}
