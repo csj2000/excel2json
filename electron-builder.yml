@@ -1,0 +1,17 @@
+appId: com.excel-to-json.app
+productName: Excel转JSON工具
+directories:
+  output: dist
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+files:
+  - electron/**/*
+  - dist/**/*
+
