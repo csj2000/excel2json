@@ -17,8 +17,7 @@ import {
 import { 
   convertToJson, 
   formatJson, 
-  JsonFormat,
-  convertMultipleSheets 
+  JsonFormat
 } from './utils/jsonConverter';
 import './styles/app.css';
 

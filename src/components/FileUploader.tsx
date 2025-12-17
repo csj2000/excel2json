@@ -35,7 +35,8 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesSelected, disabled }
     const xlsxFiles = files.filter(file => file.name.endsWith('.xlsx'));
 
     if (xlsxFiles.length > 0) {
-      const filePaths = xlsxFiles.map(file => file.path);
+      // 在 Electron 环境中，File 对象有 path 属性
+      const filePaths = xlsxFiles.map(file => (file as any).path);
       onFilesSelected(filePaths);
     } else {
       alert('请拖放 .xlsx 文件');
