@@ -5,10 +5,6 @@ node_modules/
 dist/
 dist-electron/
 
-# Build folder (but keep icon)
-build/*
-!build/icon.ico
-
 # Logs
 *.log
 npm-debug.log*
@@ -30,3 +26,5 @@ out/
 *.tmp
 .cache/
 
+# Keep build folder structure
+!.github/

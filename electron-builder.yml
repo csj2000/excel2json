@@ -2,6 +2,11 @@ appId: com.excel-to-json.app
 productName: Excel转JSON工具
 directories:
   output: dist
+files:
+  - electron/**/*
+  - dist/**/*
+
+# Windows 配置
 win:
   target:
     - target: nsis
@@ -11,7 +16,50 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-files:
-  - electron/**/*
-  - dist/**/*
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+# macOS 配置
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.productivity
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  entitlements: null
+  entitlementsInherit: null
+dmg:
+  title: Excel转JSON工具
+  icon: null
+  contents:
+    - x: 410
+      y: 150
+      type: link
+      path: /Applications
+    - x: 130
+      y: 150
+      type: file
+
+# Linux 配置
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+    - target: rpm
+      arch:
+        - x64
+  category: Utility
+  maintainer: Excel转JSON工具
+  vendor: Excel转JSON工具
 
